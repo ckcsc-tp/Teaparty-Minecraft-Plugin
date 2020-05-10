@@ -1,0 +1,26 @@
+name: TeapartyPlugin
+version: 1.0-SNAPSHOT
+main: ckcsc33rd.teapartyplugin.TeapartyPlugin
+api-version: 1.15
+authors: [ItisCaleb]
+description: For CKCSC33rd Tea party
+website: https://github.com/ItisCaleb
+commands:
+  team:
+    description: Custom teaming command
+    aliases: t
+    usage: /<command> [chat|score|list teamname]
+    permission: team
+    permission-message: "你還沒參與隊伍"
+  adminteam:
+    description: admin teaming command
+    aliases: at
+    usage: /<command> [create teamname|add teamname player|delete teamname]
+    permission: Operator
+    permission-message: "你不是管理員"
+  teamscore:
+    description: score command
+    aliases: ts
+    usage: /<command> [add teamname score|list]
+    permission: Operator
+    permission-message: "你不是管理員"
