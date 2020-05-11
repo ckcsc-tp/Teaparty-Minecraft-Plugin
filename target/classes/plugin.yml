@@ -6,21 +6,21 @@ authors: [ItisCaleb]
 description: For CKCSC33rd Tea party
 website: https://github.com/ItisCaleb
 commands:
-  team:
+  party:
     description: Custom teaming command
-    aliases: t
+    aliases: p
     usage: /<command> [chat|score|list teamname]
-    permission: team
+    permission: party
     permission-message: "你還沒參與隊伍"
   adminteam:
     description: admin teaming command
     aliases: at
     usage: /<command> [create teamname|add teamname player|delete teamname]
-    permission: Operator
+    permission: admin
     permission-message: "你不是管理員"
   teamscore:
     description: score command
     aliases: ts
     usage: /<command> [add teamname score|list]
-    permission: Operator
+    permission: admin
     permission-message: "你不是管理員"

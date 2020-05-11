@@ -11,6 +11,7 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.scoreboard.*;
 
+import java.util.List;
 import java.util.Objects;
 
 public class join implements Listener {
@@ -27,13 +28,13 @@ public class join implements Listener {
         Player p = e.getPlayer();
         e.setJoinMessage(ChatColor.GREEN+p.getName()+ChatColor.YELLOW+" Welcome!");
         createScoreboard(p);
-        updateScoreboard(p);
+        updateScoreboard("join");
     }
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent e){
         Player p = e.getPlayer();
         e.setQuitMessage(ChatColor.GREEN+p.getName()+ChatColor.YELLOW+" Quit");
-        updateScoreboard(p);
+        updateScoreboard("quit");
     }
     public void createScoreboard(Player p){
         ScoreboardManager manager = Bukkit.getScoreboardManager();
@@ -47,8 +48,12 @@ public class join implements Listener {
         online.setScore(0);
         Score club = objective.getScore(ChatColor.RED+ "Club:");
         club.setScore(0);
-        //plugin.getConfig().getConfigurationSection("clubs").getList("club");
-        //Score clubName = objective.getScore("");
+        List<String> party = (List<String>) plugin.getConfig().getList("teams");
+        for(String partys:party){
+            if(board.getTeam(partys)==null){
+                board.registerNewTeam(partys);
+            }
+        }
         for(Team team: board.getTeams()){
             for(OfflinePlayer player:team.getPlayers()){
                 if(p.equals(player)){
@@ -58,12 +63,16 @@ public class join implements Listener {
         }
         p.setScoreboard(board);
     }
-    public void updateScoreboard(Player p){
+    public void updateScoreboard(String status){
         ScoreboardManager manager = Bukkit.getScoreboardManager();
         assert manager != null;
         Scoreboard board= manager.getMainScoreboard();
         int onlinePlayer =  Bukkit.getOnlinePlayers().size();
-        board.resetScores(ChatColor.YELLOW+ "Online ： " +(onlinePlayer-1));
+        if ((status.equals("join"))) {
+            board.resetScores(ChatColor.YELLOW + "Online ： " + (onlinePlayer - 1));
+        } else {
+            board.resetScores(ChatColor.YELLOW + "Online ： " + (onlinePlayer + 1));
+        }
         Score score= board.getObjective(DisplaySlot.SIDEBAR).getScore(ChatColor.YELLOW+ "Online ： " +(onlinePlayer));
         score.setScore(0);
     }

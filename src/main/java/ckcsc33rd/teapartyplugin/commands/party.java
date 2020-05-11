@@ -17,15 +17,15 @@ import java.util.Objects;
 import java.util.Set;
 
 
-public class team implements CommandExecutor {
+public class party implements CommandExecutor {
     TeapartyPlugin plugin;
-    public team(TeapartyPlugin teapartyPlugin) {
+    public party(TeapartyPlugin teapartyPlugin) {
         plugin = teapartyPlugin;
     }
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if(command.getName().equalsIgnoreCase("team")) {
+        if(command.getName().equalsIgnoreCase("party")) {
             if(args.length == 0){
                 return false;
             }

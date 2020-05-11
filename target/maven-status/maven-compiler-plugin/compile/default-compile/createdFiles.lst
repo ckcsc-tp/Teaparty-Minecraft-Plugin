@@ -1,4 +1,4 @@
-ckcsc33rd\teapartyplugin\commands\team.class
 ckcsc33rd\teapartyplugin\commands\adminteam.class
 ckcsc33rd\teapartyplugin\TeapartyPlugin.class
 ckcsc33rd\teapartyplugin\events\join.class
+ckcsc33rd\teapartyplugin\commands\party.class
