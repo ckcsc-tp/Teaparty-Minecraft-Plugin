@@ -1,6 +1,8 @@
 package ckcsc33rd.teapartyplugin.events;
 
 import ckcsc33rd.teapartyplugin.TeapartyPlugin;
+import com.mongodb.client.MongoCollection;
+import org.bson.Document;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.OfflinePlayer;
@@ -17,9 +19,10 @@ import java.util.Objects;
 public class join implements Listener {
 
     TeapartyPlugin plugin;
-
-    public join(TeapartyPlugin teapartyPlugin) {
+    MongoCollection<Document> team;
+    public join(TeapartyPlugin teapartyPlugin ,MongoCollection<Document> collection) {
         plugin=teapartyPlugin;
+        team = collection;
     }
 
 
