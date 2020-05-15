@@ -1,6 +1,9 @@
 package ckcsc33rd.teapartyplugin.commands;
 
 import ckcsc33rd.teapartyplugin.TeapartyPlugin;
+import com.mongodb.client.MongoCollection;
+import org.bson.Document;
+import org.bson.conversions.Bson;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
@@ -15,9 +18,10 @@ import java.util.Objects;
 public class adminteam implements CommandExecutor {
 
     TeapartyPlugin plugin;
-
-    public adminteam(TeapartyPlugin teapartyPlugin) {
+    MongoCollection<Document> team;
+    public adminteam(TeapartyPlugin teapartyPlugin,MongoCollection<Document> collection) {
         plugin=teapartyPlugin;
+        team=collection;
     }
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
@@ -99,27 +103,31 @@ public class adminteam implements CommandExecutor {
             s.sendMessage(ChatColor.RED+name+"此隊伍已被創建");
             return;
         }
-        Team team = board.registerNewTeam(name);
-        team.setPrefix(ChatColor.RED+("["+name+"]"));
-        team.setDisplayName(name);
-        team.setAllowFriendlyFire(false);
+        Team team1 = board.registerNewTeam(name);
+        team1.setPrefix(ChatColor.RED+("["+name+"]"));
+        team1.setDisplayName(name);
+        team1.setAllowFriendlyFire(false);
         List<String> playerList = new ArrayList<>();
-        plugin.getConfig().set("teams."+team.getName(), playerList);
-        plugin.getConfig().set("teams."+team.getName()+".players", playerList);
-        plugin.saveConfig();
-        plugin.mg("隊伍"+team.getName()+"創建成功",s);
+        Document teams= new Document("name",name)
+                .append("player",playerList)
+                .append("score",0);
+        team.insertOne(teams);
+        plugin.mg("隊伍"+team1.getName()+"創建成功",s);
     }
 
-    public void addPlayer(String team,String player,CommandSender s){
+    public void addPlayer(String teamname,String player,CommandSender s){
         ScoreboardManager manager = Bukkit.getScoreboardManager();
         assert manager != null;
         Scoreboard board= manager.getMainScoreboard();
-        Team team1 = board.getTeam(team);
+        Document name = new Document("name",teamname);
+
+        Document team1=team.find(name).first();
+
         if(team1==null) {
             plugin.mg(ChatColor.RED+"此隊伍不存在",s);
             return;
         }
-        List<String> playerList = (List<String>) plugin.getConfig().getList("teams."+team1.getName()+".players");
+        List<String> playerList = (List<String>) team1.get("player");
         for (String playerConfig :playerList){
             assert player != null;
             if(player.equals(playerConfig)){
@@ -127,16 +135,15 @@ public class adminteam implements CommandExecutor {
                 return;
             }
         }
-        team1.addEntry(player);
         playerList.add(player);
-        plugin.getConfig().set("teams."+team1.getName()+".players",playerList);
-        plugin.getConfig().set("teams."+team1.getName()+".score",0);
-        plugin.saveConfig();
         if(Bukkit.getPlayer(player) !=null){
             Objects.requireNonNull(Bukkit.getPlayer(player)).setScoreboard(board);
         }
-        s.sendMessage(ChatColor.BLUE+ (player +"成功加入"+team1.getName()));
+        Document players = new Document("player",playerList);
+        team.updateOne(name, players);
+        s.sendMessage(ChatColor.BLUE+ (player +"成功加入"+teamname));
     }
+
     public void deletePlayer(String team,String player,CommandSender s){
         ScoreboardManager manager = Bukkit.getScoreboardManager();
         assert manager != null;
