@@ -1,6 +1,8 @@
 package ckcsc33rd.teapartyplugin.commands;
 
 import ckcsc33rd.teapartyplugin.TeapartyPlugin;
+import com.mongodb.client.MongoCollection;
+import org.bson.Document;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.OfflinePlayer;
@@ -16,11 +18,17 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
+import static com.mongodb.client.model.Filters.eq;
+
 
 public class party implements CommandExecutor {
+
     TeapartyPlugin plugin;
-    public party(TeapartyPlugin teapartyPlugin) {
+    MongoCollection<Document> team;
+
+    public party(TeapartyPlugin teapartyPlugin, MongoCollection<Document> collection) {
         plugin = teapartyPlugin;
+        team =collection;
     }
 
     @Override
@@ -49,16 +57,20 @@ public class party implements CommandExecutor {
         }
         return false;
     }
-    public void teamPlayer(String team,CommandSender s){
-        List<String> p = (List<String>) plugin.getConfig().getList("teams."+team+".players");
-        assert p != null;
-        if (p.isEmpty()){
+    public void teamPlayer(String teamname,CommandSender s){
+        Document team1 = team.find(eq("name",teamname)).first();
+        if(team1==null){
+            plugin.mg("此隊伍不存在",s);
+            return;
+        }
+        List<String> playerList = (List<String>) team1.get("player");
+        if (playerList.isEmpty()){
             plugin.mg("這個隊伍沒有玩家",s);
             return;
         }
         s.sendMessage(ChatColor.GREEN+"此隊伍的玩家有:");
-        for(String player: p){
-            plugin.mg(Objects.requireNonNull(player),s);
+        for(String playerConfig: playerList){
+            plugin.mg(Objects.requireNonNull(playerConfig),s);
         }
 
     }

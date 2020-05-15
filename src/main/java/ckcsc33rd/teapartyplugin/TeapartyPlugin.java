@@ -26,6 +26,8 @@ public final class TeapartyPlugin extends JavaPlugin implements Listener {
         MongoDatabase database = mongoClient.getDatabase("teaparty");
         team = database.getCollection("teams");
         System.out.println("DB connect");
+        if(this.getConfig().get("player")==null)
+            this.getConfig().set("player",0);
         setupCommands();
         setupEvents();
         getConfig().options().copyDefaults(true);
@@ -43,7 +45,7 @@ public final class TeapartyPlugin extends JavaPlugin implements Listener {
     }
 
     public void setupCommands(){
-        Objects.requireNonNull(getCommand("party")).setExecutor(new party(this));
+        Objects.requireNonNull(getCommand("party")).setExecutor(new party(this,team));
         Objects.requireNonNull(getCommand("adminteam")).setExecutor(new adminteam(this,team));
     }
     public void  mg(String m, CommandSender sender){

@@ -1,7 +1,9 @@
 package ckcsc33rd.teapartyplugin.events;
 
 import ckcsc33rd.teapartyplugin.TeapartyPlugin;
+import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
+import com.mongodb.client.model.Filters;
 import org.bson.Document;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -13,6 +15,7 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.scoreboard.*;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
@@ -24,7 +27,6 @@ public class join implements Listener {
         plugin=teapartyPlugin;
         team = collection;
     }
-
 
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent e){
@@ -42,41 +44,60 @@ public class join implements Listener {
     public void createScoreboard(Player p){
         ScoreboardManager manager = Bukkit.getScoreboardManager();
         assert manager != null;
-        Scoreboard board= manager.getMainScoreboard();
+        Scoreboard board= manager.getNewScoreboard();
         Objective objective= board.registerNewObjective("info","dummy");
         objective.setDisplayName("Info");
         objective.setDisplaySlot(DisplaySlot.SIDEBAR);
         int onlinePlayer =  Bukkit.getOnlinePlayers().size();
-        Score online = objective.getScore(ChatColor.YELLOW+ "Online ： " +onlinePlayer);
-        online.setScore(0);
-        Score club = objective.getScore(ChatColor.RED+ "Club:");
-        club.setScore(0);
-        List<String> party = (List<String>) plugin.getConfig().getList("teams");
-        for(String partys:party){
-            if(board.getTeam(partys)==null){
-                board.registerNewTeam(partys);
+        objective.getScore(ChatColor.YELLOW+ "Online ： " +onlinePlayer).setScore(0);
+        objective.getScore(ChatColor.RED+ "Club:").setScore(0);
+        FindIterable<Document> party = team.find();
+        for(Document partys:party){
+            String name =partys.getString("name");
+            if(board.getTeam(name)==null){
+                Team t = board.registerNewTeam(name);
+                t.setPrefix(ChatColor.RED+("["+name+"]"));
+                t.setDisplayName(name);
+                t.setAllowFriendlyFire(false);
             }
         }
-        for(Team team: board.getTeams()){
-            for(OfflinePlayer player:team.getPlayers()){
-                if(p.equals(player)){
-                    team.addPlayer(p);
+        Team team;
+        for(Document teams: party){
+            List<String> playerList = (List<String>) teams.get("player");
+            String teamname = teams.getString("name");
+            for (String players :playerList){
+                if(p.getName().equals(players)){
+                  team = board.getTeam(teamname);
+                  assert team != null;
+                  team.addPlayer(p);
+                  System.out.println(team.getName());
+                  System.out.println(p.getName());
                 }
             }
         }
         p.setScoreboard(board);
     }
     public void updateScoreboard(String status){
-        ScoreboardManager manager = Bukkit.getScoreboardManager();
-        assert manager != null;
-        Scoreboard board= manager.getMainScoreboard();
-        int onlinePlayer =  Bukkit.getOnlinePlayers().size();
-        if ((status.equals("join"))) {
-            board.resetScores(ChatColor.YELLOW + "Online ： " + (onlinePlayer - 1));
-        } else {
-            board.resetScores(ChatColor.YELLOW + "Online ： " + (onlinePlayer + 1));
+        int oldPlayer= plugin.getConfig().getInt("player");
+        Collection<?> onlinePlayer = Bukkit.getOnlinePlayers();
+        for (Player online : Bukkit.getOnlinePlayers()){
+            if(status.equals("join")) {
+                Scoreboard board = online.getScoreboard();
+                board.resetScores("Online : "+ oldPlayer);
+                board.getObjective(DisplaySlot.SIDEBAR)
+                        .getScore(ChatColor.YELLOW+ "Online ： " +onlinePlayer.size())
+                        .setScore(0);
+                plugin.getConfig().set("player",oldPlayer+1);
+                System.out.println(plugin.getConfig().getInt("player"));
+            }else if(status.equals("quit")) {
+                Scoreboard board = online.getScoreboard();
+                board.resetScores("Online : "+ oldPlayer);
+                board.getObjective(DisplaySlot.SIDEBAR)
+                        .getScore(ChatColor.YELLOW+ "Online ： " +onlinePlayer.size())
+                        .setScore(0);
+                plugin.getConfig().set("player",oldPlayer-1);
+                System.out.println(plugin.getConfig().getInt("player"));
+            }
         }
-        Score score= board.getObjective(DisplaySlot.SIDEBAR).getScore(ChatColor.YELLOW+ "Online ： " +(onlinePlayer));
-        score.setScore(0);
     }
 }
