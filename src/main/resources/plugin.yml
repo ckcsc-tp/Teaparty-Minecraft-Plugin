@@ -5,6 +5,7 @@ api-version: 1.15
 authors: [ItisCaleb]
 description: For CKCSC33rd Tea party
 website: https://github.com/ItisCaleb
+softdepend: [BungeeCord]
 commands:
   party:
     description: Custom teaming command

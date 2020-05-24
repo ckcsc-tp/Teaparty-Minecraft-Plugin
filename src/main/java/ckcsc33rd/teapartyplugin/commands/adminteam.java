@@ -1,6 +1,8 @@
 package ckcsc33rd.teapartyplugin.commands;
 
 import ckcsc33rd.teapartyplugin.TeapartyPlugin;
+import com.google.common.io.ByteArrayDataOutput;
+import com.google.common.io.ByteStreams;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
@@ -11,14 +13,14 @@ import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
 import org.bukkit.scoreboard.*;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.eq;
+import static com.mongodb.client.model.Filters.*;
 
 public class adminteam implements CommandExecutor {
 
@@ -80,6 +82,31 @@ public class adminteam implements CommandExecutor {
                     addPlayer(args[1],args[2],sender);
                     return true;
                 }
+                if(args[0].equals("score")){
+                    if(args[1].isEmpty()) {
+                        plugin.mg("請輸入隊伍名稱",sender);
+                        return true;
+                    }
+                    if(args[2].isEmpty()) {
+                        plugin.mg("請輸入分數",sender);
+                        return true;
+                    }
+                    score(args[1],Integer.parseInt(args[2]),sender);
+                    return true;
+                }
+                if(args[0].equals("send")){
+                    if(args[1].isEmpty()) {
+                        plugin.mg("請輸入隊伍名稱",sender);
+                        return true;
+                    }
+                    if(args[2].isEmpty()) {
+                        plugin.mg("請輸入伺服器",sender);
+                        return true;
+                    }
+                    score(args[1],Integer.parseInt(args[2]),sender);
+                    return true;
+                }
+
 
             }
             else {
@@ -167,7 +194,6 @@ public class adminteam implements CommandExecutor {
         s.sendMessage(ChatColor.BLUE+ (player +"成功加入"+teamname));
     }
 
-
     //kick player in team
     public void deletePlayer(String teamname,String player,CommandSender s){
 
@@ -221,5 +247,46 @@ public class adminteam implements CommandExecutor {
         s.sendMessage(ChatColor.BLUE+ ("隊伍"+teamname+"已解散"));
         assert t != null;
         t.unregister();
+    }
+
+    //adds team score
+    public void score(String player,int score,CommandSender s){
+        Document team1=team.find(in("player",player)).first();
+        if(team1==null){
+            plugin.mg("此玩家不在隊伍裡",s);
+            return;
+        }
+        if (score<0){
+            plugin.mg("不得為小於0的數字",s);
+            return;
+        }
+        String teamname=team1.getString("name");
+        Document score1 = new Document("score",score);
+        team.updateOne(eq("name",teamname),new Document("$set",score1));
+    }
+
+    //send player
+    public void playerSend(String teamname,String server,CommandSender s){
+        Document team1 = team.find(eq("name",teamname)).first();
+        if(team1==null){
+            plugin.mg("此隊伍不存在",s);
+            return;
+        }
+        List<String> playerList = (List<String>) team1.get("player");
+        if (playerList.isEmpty()){
+            plugin.mg("這個隊伍沒有玩家",s);
+            return;
+        }
+        for(String playerConfig: playerList){
+            Player player =Bukkit.getPlayer(playerConfig);
+            if(player!=null) {
+                ByteArrayDataOutput out = ByteStreams.newDataOutput();
+                out.writeUTF("Connect");
+                out.writeUTF(playerConfig);
+                player.sendPluginMessage(plugin, "BungeeCord", out.toByteArray());
+            }
+
+        }
+
     }
 }
