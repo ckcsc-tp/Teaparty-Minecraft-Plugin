@@ -16,7 +16,12 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.scoreboard.*;
 
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutput;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 
@@ -103,7 +108,11 @@ public class adminteam implements CommandExecutor {
                         plugin.mg("請輸入伺服器",sender);
                         return true;
                     }
-                    score(args[1],Integer.parseInt(args[2]),sender);
+                    try {
+                        playerSend(args[1],args[2],sender);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                     return true;
                 }
 
@@ -266,7 +275,7 @@ public class adminteam implements CommandExecutor {
     }
 
     //send player
-    public void playerSend(String teamname,String server,CommandSender s){
+    public void playerSend(String teamname,String server,CommandSender s) throws IOException {
         Document team1 = team.find(eq("name",teamname)).first();
         if(team1==null){
             plugin.mg("此隊伍不存在",s);
@@ -280,10 +289,11 @@ public class adminteam implements CommandExecutor {
         for(String playerConfig: playerList){
             Player player =Bukkit.getPlayer(playerConfig);
             if(player!=null) {
-                ByteArrayDataOutput out = ByteStreams.newDataOutput();
+                ByteArrayOutputStream b = new ByteArrayOutputStream();
+                DataOutputStream out = new DataOutputStream(b);
                 out.writeUTF("Connect");
-                out.writeUTF(playerConfig);
-                player.sendPluginMessage(plugin, "BungeeCord", out.toByteArray());
+                out.writeUTF(server);
+                player.sendPluginMessage(plugin, "BungeeCord", b.toByteArray());
             }
 
         }
