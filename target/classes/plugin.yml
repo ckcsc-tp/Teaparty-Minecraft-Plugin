@@ -1,5 +1,5 @@
 name: TeapartyPlugin
-version: 1.0-SNAPSHOT
+version: 1.0 Beta
 main: ckcsc33rd.teapartyplugin.TeapartyPlugin
 api-version: 1.15
 authors: [ItisCaleb]

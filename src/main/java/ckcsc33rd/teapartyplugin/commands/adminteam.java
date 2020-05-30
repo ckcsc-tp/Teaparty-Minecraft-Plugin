@@ -1,6 +1,7 @@
 package ckcsc33rd.teapartyplugin.commands;
 
 import ckcsc33rd.teapartyplugin.TeapartyPlugin;
+import ckcsc33rd.teapartyplugin.events.join;
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
 import com.mongodb.client.FindIterable;
@@ -31,17 +32,24 @@ public class adminteam implements CommandExecutor {
 
     TeapartyPlugin plugin;
     MongoCollection<Document> team;
-    public adminteam(TeapartyPlugin teapartyPlugin,MongoCollection<Document> collection) {
+    public adminteam(TeapartyPlugin teapartyPlugin) {
         //繼承plugin跟mongodb
         plugin=teapartyPlugin;
-        team=collection;
+        team=TeapartyPlugin.team;
     }
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if(command.getName().equalsIgnoreCase("adminteam")) {
             if (sender.isOp()) {
-                if(args.length == 0)
-                    return false;
+                if(args.length == 0 || args[0].equals("help")){
+                    plugin.mg("/at create <team name>",sender);
+                    plugin.mg("/at delete <team name>",sender);
+                    plugin.mg("/at add <team name> <player>",sender);
+                    plugin.mg("/at kick <team name> <player>",sender);
+                    plugin.mg("/at score <team name> <number>",sender);
+                    plugin.mg("/at send <team name> <server>",sender);
+                    return true;
+                }
                 if(args[0].equals("list")){
                     TeamList(sender);
                     return true;
@@ -152,7 +160,6 @@ public class adminteam implements CommandExecutor {
 
         //register team in the server
         Team t= board.registerNewTeam(teamname);
-        t.setPrefix(ChatColor.RED+("["+teamname+"]"));
         t.setDisplayName(teamname);
         t.setAllowFriendlyFire(false);
         List<String> playerList = new ArrayList<>();
@@ -192,14 +199,11 @@ public class adminteam implements CommandExecutor {
         playerList.add(player);
         assert t != null;
         t.addEntry(player);
-        //if the player is in the server then add the player to the team
-        if(Bukkit.getPlayer(player) !=null){
-            Objects.requireNonNull(Bukkit.getPlayer(player)).setScoreboard(board);
-        }
-
         //update team data in database
         Document players = new Document("player",playerList);
         team.updateOne(eq("name",teamname), new Document("$set",players));
+        //if the player is in the server then add the player to the team
+        join.updateScoreboard("join");
         s.sendMessage(ChatColor.BLUE+ (player +"成功加入"+teamname));
     }
 
@@ -226,6 +230,8 @@ public class adminteam implements CommandExecutor {
                 playerList.remove(playerConfig);
                 Document players = new Document("player",playerList);
                 team.updateOne(eq("name",teamname), new Document("$set",players));
+                //if the player is in the server then add the player to the team
+                join.updateScoreboard("join");
                 return;
             }
 
@@ -256,6 +262,8 @@ public class adminteam implements CommandExecutor {
         s.sendMessage(ChatColor.BLUE+ ("隊伍"+teamname+"已解散"));
         assert t != null;
         t.unregister();
+        //if the player is in the server then add the player to the team
+        join.updateScoreboard("join");
     }
 
     //adds team score

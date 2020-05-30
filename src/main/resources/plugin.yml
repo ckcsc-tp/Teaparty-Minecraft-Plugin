@@ -16,7 +16,7 @@ commands:
   adminteam:
     description: admin teaming command
     aliases: at
-    usage: /<command> [create teamname|add teamname player|delete teamname]
+    usage: 完整指令列表請打 /at help或是/adminteam help
     permission: admin
     permission-message: "你不是管理員"
   teamscore:

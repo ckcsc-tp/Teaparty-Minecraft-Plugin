@@ -17,7 +17,7 @@ public class chat implements Listener {
        Team team= p.getScoreboard().getPlayerTeam(p);
         assert team != null;
         if (team!=null) {
-            p.setDisplayName((ChatColor.BLUE + "[" + team.getName() + "]") + p.getName());
+            p.setDisplayName((ChatColor.BLUE + "[" + team.getName() + "]")+ChatColor.WHITE+ p.getName());
         }
     }
 }

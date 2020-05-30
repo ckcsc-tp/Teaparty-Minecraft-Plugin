@@ -6,7 +6,7 @@
 
     <groupId>CKCSC33rd</groupId>
     <artifactId>TeapartyPlugin</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0 Beta</version>
     <packaging>jar</packaging>
 
     <name>TeapartyPlugin</name>

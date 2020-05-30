@@ -26,9 +26,9 @@ public class party implements CommandExecutor {
     TeapartyPlugin plugin;
     MongoCollection<Document> team;
 
-    public party(TeapartyPlugin teapartyPlugin, MongoCollection<Document> collection) {
+    public party(TeapartyPlugin teapartyPlugin) {
         plugin = teapartyPlugin;
-        team =collection;
+        team =TeapartyPlugin.team;
     }
 
     @Override
