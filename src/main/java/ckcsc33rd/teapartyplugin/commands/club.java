@@ -1,6 +1,7 @@
 package ckcsc33rd.teapartyplugin.commands;
 
 import ckcsc33rd.teapartyplugin.TeapartyPlugin;
+import ckcsc33rd.teapartyplugin.events.chat;
 import ckcsc33rd.teapartyplugin.events.join;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
@@ -16,6 +17,7 @@ import org.bukkit.scoreboard.Team;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import static com.mongodb.client.model.Filters.eq;
 
@@ -34,16 +36,8 @@ public class club implements CommandExecutor {
         if(command.getName().equalsIgnoreCase("club")){
             if (sender.isOp()) {
                 if (args.length == 0 || args[0].equals("help")) {
-                    plugin.mg("/club create <team name>", sender);
-                    plugin.mg("/club delete <team name>", sender);
-                    plugin.mg("/club add <team name> <player>", sender);
-                    plugin.mg("/club kick <team name> <player>", sender);
-                    plugin.mg("/club score <team name> <number>", sender);
-                    plugin.mg("/club send <team name> <server>", sender);
-                    return true;
-                }
-                if (args[0].equals("list")) {
-                    ClubList(sender);
+                    plugin.mg("/club create <club name>", sender);
+                    plugin.mg("/club delete <player name>", sender);
                     return true;
                 }
                 if (args[0].equals("create")) {
@@ -51,7 +45,7 @@ public class club implements CommandExecutor {
                         plugin.mg("請輸入社團名稱", sender);
                         return true;
                     }
-                    addClub(args[1], sender);
+                    addClub(args[1],args[2], sender);
                     return true;
                 }
 
@@ -63,130 +57,44 @@ public class club implements CommandExecutor {
                     deleteClub(args[1], sender);
                     return true;
                 }
-                if (args[0].equals("kick")) {
-                    if (args[1].isEmpty()) {
-                        plugin.mg("請輸入隊伍名稱", sender);
-                        return true;
-                    }
-                    if (args[2].isEmpty()) {
-                        plugin.mg("請輸入玩家名稱", sender);
-                        return true;
-                    }
-                    deletePlayer(args[1], args[2], sender);
-                    return true;
-                }
-                if (args[0].equals("add")) {
-                    if (args[1].isEmpty()) {
-                        plugin.mg("請輸入隊伍名稱", sender);
-                        return true;
-                    }
-                    if (args[2].isEmpty()) {
-                        plugin.mg("請輸入玩家名稱", sender);
-                        return true;
-                    }
-                    addPlayer(args[1], args[2], sender);
-                    return true;
-                }
             }
             
         }
 
         return false;
     }
-    public void ClubList(CommandSender s){
-        s.sendMessage(ChatColor.GREEN+ "社團:");
-        //find all teams and list them
-        FindIterable<Document> club = clubs.find();
-        for (Document document : club) {
-            String name = document.getString("name");
-            plugin.mg(name, s);
-        }
-    }
-    public void addClub(String teamname,CommandSender s){
+    public void addClub(String player,String teamname,CommandSender s){
 
         //check if the team exist
-        Document team1=clubs.find(eq("name",teamname)).first();
-        if(team1!=null) {
-            s.sendMessage(ChatColor.RED+teamname+"此社團已存在");
+        Document data=clubs.find(eq("name",player)).first();
+        if(data!=null) {
+            s.sendMessage(ChatColor.RED+teamname+"此玩家已註冊");
             return;
         }
 
-        List<String> playerList = new ArrayList<>();
-
         //insert team's data to the database
-        Document club= new Document("name",teamname)
-                .append("player",playerList);
+        Document club= new Document("name",player)
+                .append("club",teamname);
         clubs.insertOne(club);
-        plugin.mg("社團"+teamname+"加入成功",s);
+        plugin.mg("玩家"+teamname+"註冊成功",s);
+        chat.updateDisplay(Objects.requireNonNull(Bukkit.getPlayer(player)));
     }
-    public void deleteClub(String teamname,CommandSender s){
+    public void deleteClub(String player,CommandSender s){
 
         //check if the team exist
-        Document team1=clubs.find(eq("name",teamname)).first();
+        Document team1=clubs.find(eq("name",player)).first();
         if(team1==null){
-            plugin.mg("此社團不存在",s);
+            plugin.mg("此玩家還未註冊",s);
             return;
         }
         //delete the team
-        clubs.deleteOne(eq("name",teamname));
-        s.sendMessage(ChatColor.BLUE+ ("社團"+teamname+"已刪除"));
+        clubs.deleteOne(eq("name",player));
+        s.sendMessage(ChatColor.BLUE+ ("玩家"+player+"已撤銷註冊"));
         //if the player is in the server then add the player to the team
-        join.updateScoreboard("join");
+        join.updateScoreboard();
+        chat.updateDisplay(Objects.requireNonNull(Bukkit.getPlayer(player)));
     }
-    public void addPlayer(String teamname,String player,CommandSender s){
 
-
-
-        //check if the team exist
-        Document team1=clubs.find(eq("name",teamname)).first();
-        if(team1==null) {
-            plugin.mg(ChatColor.RED+"此社團不存在",s);
-            return;
-        }
-
-        //get all the player in the team
-        List<String> playerList = (List<String>) team1.get("player");
-        for (String playerConfig :playerList){
-            assert player != null;
-            if(player.equals(playerConfig)){
-                plugin.mg("此玩家已加入社團",s);
-                return;
-            }
-        }
-        playerList.add(player);
-
-        //update team data in database
-        Document players = new Document("player",playerList);
-        clubs.updateOne(eq("name",teamname), new Document("$set",players));
-        //if the player is in the server then add the player to the team
-        join.updateScoreboard("join");
-        s.sendMessage(ChatColor.BLUE+ (player +"成功加入"+teamname));
-    }
-    public void deletePlayer(String teamname,String player,CommandSender s){
-
-        //get the team in database
-        Document team1=clubs.find(eq("name",teamname)).first();
-        List<String> playerList = (List<String>) team1.get("player");
-        assert playerList != null;
-
-        //check if the player is in the team and kick it
-        for (String playerConfig:playerList) {
-            if(player.equals(playerConfig)){
-
-                s.sendMessage(ChatColor.BLUE+ ("社團"+teamname+"已移除"+player));
-                playerList.remove(playerConfig);
-                Document players = new Document("player",playerList);
-                clubs.updateOne(eq("name",teamname), new Document("$set",players));
-                //if the player is in the server then add the player to the team
-                join.updateScoreboard("join");
-                return;
-            }
-
-        }
-
-        plugin.mg("這玩家不存在於此社團",s);
-
-    }
 
 
 

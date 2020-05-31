@@ -2,20 +2,18 @@ package ckcsc33rd.teapartyplugin.events;
 
 import ckcsc33rd.teapartyplugin.TeapartyPlugin;
 import com.mongodb.client.FindIterable;
-import com.mongodb.client.MongoCollection;
-import com.mongodb.client.model.Filters;
 import org.bson.Document;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
-import org.bukkit.OfflinePlayer;
+import org.bukkit.GameMode;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerGameModeChangeEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.scoreboard.*;
 
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
@@ -24,9 +22,9 @@ public class join implements Listener {
 
     TeapartyPlugin plugin;
     public static final HashMap<Player,Scoreboard> scoreboard = new HashMap<Player, Scoreboard>();
+    public static final HashMap<String,Integer> onlinePlayer  = new HashMap<String, Integer>();
     public join(TeapartyPlugin teapartyPlugin ) {
         plugin=teapartyPlugin;
-
     }
 
     @EventHandler
@@ -34,17 +32,31 @@ public class join implements Listener {
         Player p = e.getPlayer();
         e.setJoinMessage(ChatColor.GREEN+p.getName()+ChatColor.YELLOW+" Welcome!");
         scoreboard.put(p, Objects.requireNonNull(Bukkit.getServer().getScoreboardManager()).getNewScoreboard());
-        teamCreate();
-        updateScoreboard("join");
+        updateScoreboard();
+        chat.updateDisplay(p);
     }
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent e){
         Player p = e.getPlayer();
         e.setQuitMessage(ChatColor.GREEN+p.getName()+ChatColor.YELLOW+" Quit");
         scoreboard.remove(p);
-        updateScoreboard("quit");
+        if(p.getGameMode().equals(GameMode.SPECTATOR)){
+            updatePeople("spectateQuit");
+        }else {
+            updatePeople("quit");
+        }
     }
-    public void teamCreate(){
+    @EventHandler
+    public void onModeChange(PlayerGameModeChangeEvent e){
+        GameMode gameMode= e.getNewGameMode();
+        if(gameMode.equals(GameMode.SPECTATOR)) {
+            updatePeople("notAlive");
+        }else if(e.getPlayer().getGameMode().equals(GameMode.SPECTATOR)){
+            updatePeople("fromSpectator");
+        }else {updatePeople("join");}
+    }
+
+    public static void teamCreate(){
         ScoreboardManager manager =Bukkit.getScoreboardManager();
         assert manager != null;
         Scoreboard board = manager.getMainScoreboard();
@@ -53,6 +65,7 @@ public class join implements Listener {
             String name =partys.getString("name");
             if(board.getTeam(name)==null){
                 Team t = board.registerNewTeam(name);
+                t.setPrefix(ChatColor.RED+("["+name+"]"));
                 t.setDisplayName(name);
                 t.setAllowFriendlyFire(false);
             }
@@ -68,9 +81,38 @@ public class join implements Listener {
                 }
             }
         }
+    public static void updatePeople(String status){
+        int Alive=0;
+        if(onlinePlayer.get("online")==null){
+            onlinePlayer.put("online",Bukkit.getOnlinePlayers().size());
+        }
+        for (Player online : Bukkit.getOnlinePlayers()){
+            GameMode gameMode =online.getGameMode();
+            if(gameMode.equals(GameMode.SURVIVAL)||gameMode.equals(GameMode.ADVENTURE)||gameMode.equals(GameMode.CREATIVE)) {
+                Alive++;
+            }
 
-    public static void updateScoreboard(String status){
-        Collection<?> onlinePlayer = Bukkit.getOnlinePlayers();
+        }
+        if(status.equals("quit")||status.equals("notAlive")){
+            Alive--;
+        }
+        if(status.equals("fromSpectator")) Alive++;
+        onlinePlayer.putIfAbsent("spectate", Alive);
+
+        int number= (status.equals("join")||status.equals("notAlive")||status.equals("fromSpectator")) ? Bukkit.getOnlinePlayers().size() : Bukkit.getOnlinePlayers().size()-1;
+
+        for (Player online : Bukkit.getOnlinePlayers()){
+            Scoreboard board = scoreboard.get(online);
+            board.resetScores("§6人數 §f： "+onlinePlayer.get("spectate")+"/"+onlinePlayer.get("online"));
+            board.getObjective("info")
+                    .getScore("§6人數 §f： "+Alive+"/"+number)
+                    .setScore(4);
+        }
+        onlinePlayer.put("online",number);
+        onlinePlayer.put("spectate",Alive);
+
+    }
+    public static void updateScoreboard(){
         ScoreboardManager manager = Bukkit.getScoreboardManager();
         assert manager != null;
 
@@ -80,15 +122,15 @@ public class join implements Listener {
             if(board.getObjective("info")!= null) {
                 Objects.requireNonNull(board.getObjective("info")).unregister();
             }
-            int number= (status.equals("join")) ? onlinePlayer.size() : onlinePlayer.size()-1;
+            if(board.getObjective("club")!= null) {
+                Objects.requireNonNull(board.getObjective("club")).unregister();
+            }
+
             Objective info= board.registerNewObjective("info","dummy");
-            info.setDisplayName("資訊欄");
+            info.setDisplayName("§6§lResplendent §r§fX §9§lUltramarine");
             info.setDisplaySlot(DisplaySlot.SIDEBAR);
-            Objective playerClub= board.registerNewObjective("club","dummy");
-            playerClub.setDisplaySlot(DisplaySlot.BELOW_NAME);
-            playerClub.setDisplayName("社團");
+
             String thisPlayerTeam = "你還沒有隊伍";
-            String thisPlayerClub = "你還沒有社團";
             //register all team
             FindIterable<Document> party = TeapartyPlugin.team.find();
             FindIterable<Document> club = TeapartyPlugin.clubs.find();
@@ -108,12 +150,11 @@ public class join implements Listener {
                     thisPlayerTeam = playerTeam.getName();
                 }
             }
-
-
-            info.getScore(ChatColor.YELLOW+ "線上人數 ： " +number).setScore(0);
-            info.getScore(ChatColor.GREEN+ "隊伍 ： " +thisPlayerTeam).setScore(0);
-
+            info.getScore("§8-------------------------").setScore(5);
+            info.getScore("§a隊伍 §f： " +thisPlayerTeam).setScore(3);
+            info.getScore("§8----------§cmc.ckcsc.net§8---------").setScore(2);
             online.setScoreboard(board);
+            join.updatePeople("join");
         }
     }
 }

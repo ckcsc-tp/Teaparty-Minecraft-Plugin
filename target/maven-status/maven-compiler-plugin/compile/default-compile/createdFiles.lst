@@ -1,6 +1,6 @@
 ckcsc33rd\teapartyplugin\commands\adminteam.class
 ckcsc33rd\teapartyplugin\TeapartyPlugin.class
+ckcsc33rd\teapartyplugin\commands\club.class
 ckcsc33rd\teapartyplugin\events\chat.class
 ckcsc33rd\teapartyplugin\events\join.class
-ckcsc33rd\teapartyplugin\TeamData.class
 ckcsc33rd\teapartyplugin\commands\party.class

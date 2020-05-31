@@ -2,13 +2,9 @@ package ckcsc33rd.teapartyplugin.commands;
 
 import ckcsc33rd.teapartyplugin.TeapartyPlugin;
 import ckcsc33rd.teapartyplugin.events.join;
-import com.google.common.io.ByteArrayDataOutput;
-import com.google.common.io.ByteStreams;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoCursor;
 import org.bson.Document;
-import org.bson.conversions.Bson;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
@@ -18,11 +14,9 @@ import org.bukkit.entity.Player;
 import org.bukkit.scoreboard.*;
 
 import java.io.ByteArrayOutputStream;
-import java.io.DataOutput;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 
@@ -123,6 +117,9 @@ public class adminteam implements CommandExecutor {
                     }
                     return true;
                 }
+                if(args[0].equals("update")){
+                    join.teamCreate();
+                }
 
 
             }
@@ -159,6 +156,9 @@ public class adminteam implements CommandExecutor {
         }
 
         //register team in the server
+        if(board.getTeam(teamname)!=null){
+            Objects.requireNonNull(board.getTeam(teamname)).unregister();
+        }
         Team t= board.registerNewTeam(teamname);
         t.setDisplayName(teamname);
         t.setAllowFriendlyFire(false);
@@ -203,7 +203,7 @@ public class adminteam implements CommandExecutor {
         Document players = new Document("player",playerList);
         team.updateOne(eq("name",teamname), new Document("$set",players));
         //if the player is in the server then add the player to the team
-        join.updateScoreboard("join");
+        join.updateScoreboard();
         s.sendMessage(ChatColor.BLUE+ (player +"成功加入"+teamname));
     }
 
@@ -231,7 +231,7 @@ public class adminteam implements CommandExecutor {
                 Document players = new Document("player",playerList);
                 team.updateOne(eq("name",teamname), new Document("$set",players));
                 //if the player is in the server then add the player to the team
-                join.updateScoreboard("join");
+                join.updateScoreboard();
                 return;
             }
 
@@ -263,7 +263,7 @@ public class adminteam implements CommandExecutor {
         assert t != null;
         t.unregister();
         //if the player is in the server then add the player to the team
-        join.updateScoreboard("join");
+        join.updateScoreboard();
     }
 
     //adds team score

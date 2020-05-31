@@ -1,5 +1,5 @@
 name: TeapartyPlugin
-version: 1.0 Beta
+version: wow-8.0-garbage-edition
 main: ckcsc33rd.teapartyplugin.TeapartyPlugin
 api-version: 1.15
 authors: [ItisCaleb]
@@ -16,12 +16,12 @@ commands:
   adminteam:
     description: admin teaming command
     aliases: at
-    usage: /<command> [create teamname|add teamname player|delete teamname]
+    usage: 完整指令列表請打 /at help或是/adminteam help
     permission: admin
     permission-message: "你不是管理員"
-  teamscore:
-    description: score command
-    aliases: ts
-    usage: /<command> [add teamname score|list]
+  club:
+    description: club command
+    aliases: cl
+    usage: /<command> <create>
     permission: admin
     permission-message: "你不是管理員"

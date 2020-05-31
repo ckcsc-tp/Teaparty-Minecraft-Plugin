@@ -46,7 +46,6 @@ public final class TeapartyPlugin extends JavaPlugin implements Listener {
     public void setupEvents(){
         getServer().getPluginManager().registerEvents(new join(this), this);
         getServer().getPluginManager().registerEvents(new chat(),this);
-
     }
 
     public void setupCommands(){
