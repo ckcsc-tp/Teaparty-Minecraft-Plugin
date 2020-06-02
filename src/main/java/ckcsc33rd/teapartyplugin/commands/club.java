@@ -36,8 +36,9 @@ public class club implements CommandExecutor {
         if(command.getName().equalsIgnoreCase("club")){
             if (sender.isOp()) {
                 if (args.length == 0 || args[0].equals("help")) {
-                    plugin.mg("/club create <club name>", sender);
-                    plugin.mg("/club delete <player name>", sender);
+                    sender.sendMessage("§a以下為club的使用方法");
+                    plugin.mg("/club create <玩家> <暱稱> ", sender);
+                    plugin.mg("/club delete <玩家>", sender);
                     return true;
                 }
                 if (args[0].equals("create")) {
@@ -77,7 +78,9 @@ public class club implements CommandExecutor {
                 .append("club",teamname);
         clubs.insertOne(club);
         plugin.mg("玩家"+teamname+"註冊成功",s);
-        chat.updateDisplay(Objects.requireNonNull(Bukkit.getPlayer(player)));
+        if(Bukkit.getPlayer(player)!=null) {
+            chat.updateDisplay(Objects.requireNonNull(Bukkit.getPlayer(player)));
+        }
     }
     public void deleteClub(String player,CommandSender s){
 

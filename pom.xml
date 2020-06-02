@@ -6,7 +6,7 @@
 
     <groupId>CKCSC33rd</groupId>
     <artifactId>TeapartyPlugin</artifactId>
-    <version>wow-8.0-garbage-edition</version>
+    <version>MyKirito-Edition</version>
     <packaging>jar</packaging>
 
     <name>TeapartyPlugin</name>

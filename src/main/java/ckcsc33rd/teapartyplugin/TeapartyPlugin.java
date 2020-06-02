@@ -3,6 +3,7 @@ package ckcsc33rd.teapartyplugin;
 import ckcsc33rd.teapartyplugin.commands.adminteam;
 import ckcsc33rd.teapartyplugin.commands.club;
 import ckcsc33rd.teapartyplugin.commands.party;
+import ckcsc33rd.teapartyplugin.commands.tabcomplete;
 import ckcsc33rd.teapartyplugin.events.chat;
 import ckcsc33rd.teapartyplugin.events.join;
 import com.mongodb.client.MongoClient;
@@ -50,8 +51,12 @@ public final class TeapartyPlugin extends JavaPlugin implements Listener {
 
     public void setupCommands(){
         Objects.requireNonNull(getCommand("party")).setExecutor(new party(this));
+        Objects.requireNonNull(getCommand("lobby")).setExecutor(new party(this));
+        Objects.requireNonNull(getCommand("teaparty")).setExecutor(new party(this));
         Objects.requireNonNull(getCommand("adminteam")).setExecutor(new adminteam(this));
         Objects.requireNonNull(getCommand("club")).setExecutor(new club(this));
+        Objects.requireNonNull(getCommand("party")).setTabCompleter(new tabcomplete());
+        Objects.requireNonNull(getCommand("adminteam")).setTabCompleter(new tabcomplete());
     }
 
     public void  mg(String m, CommandSender sender){

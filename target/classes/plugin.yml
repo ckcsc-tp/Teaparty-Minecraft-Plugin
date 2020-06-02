@@ -1,5 +1,5 @@
 name: TeapartyPlugin
-version: wow-8.0-garbage-edition
+version: MyKirito-Edition
 main: ckcsc33rd.teapartyplugin.TeapartyPlugin
 api-version: 1.15
 authors: [ItisCaleb]
@@ -7,12 +7,19 @@ description: For CKCSC33rd Tea party
 website: https://github.com/ItisCaleb
 softdepend: [BungeeCord]
 commands:
+
+  teaparty:
+    description: main
+    aliases: teap
+    usage: 完整指令列表請打 /teap help或是/teaparty help
   party:
     description: Custom teaming command
     aliases: p
-    usage: /<command> [chat|score|list teamname]
-    permission: party
-    permission-message: "你還沒參與隊伍"
+    usage: 完整指令列表請打 /p help或是/party help
+  lobby:
+    description: lobby command
+    aliases: l
+    usage: /<command>
   adminteam:
     description: admin teaming command
     aliases: at

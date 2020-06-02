@@ -1,24 +1,26 @@
 package ckcsc33rd.teapartyplugin.commands;
 
 import ckcsc33rd.teapartyplugin.TeapartyPlugin;
+import ckcsc33rd.teapartyplugin.events.chat;
 import ckcsc33rd.teapartyplugin.events.join;
+import com.mongodb.BasicDBObject;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoCursor;
 import org.bson.Document;
-import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
+import org.bukkit.*;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.ArmorStand;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.scoreboard.*;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 import static com.mongodb.client.model.Filters.*;
 
@@ -26,6 +28,7 @@ public class adminteam implements CommandExecutor {
 
     TeapartyPlugin plugin;
     MongoCollection<Document> team;
+    public static final HashMap<String,Integer> scoreTeam = new HashMap<String, Integer>();
     public adminteam(TeapartyPlugin teapartyPlugin) {
         //繼承plugin跟mongodb
         plugin=teapartyPlugin;
@@ -36,12 +39,15 @@ public class adminteam implements CommandExecutor {
         if(command.getName().equalsIgnoreCase("adminteam")) {
             if (sender.isOp()) {
                 if(args.length == 0 || args[0].equals("help")){
-                    plugin.mg("/at create <team name>",sender);
-                    plugin.mg("/at delete <team name>",sender);
-                    plugin.mg("/at add <team name> <player>",sender);
-                    plugin.mg("/at kick <team name> <player>",sender);
-                    plugin.mg("/at score <team name> <number>",sender);
-                    plugin.mg("/at send <team name> <server>",sender);
+                    sender.sendMessage("§a以下為adminteam的使用方法");
+                    plugin.mg("/at create <隊伍名稱>",sender);
+                    plugin.mg("/at delete <隊伍名稱>",sender);
+                    plugin.mg("/at add <隊伍名稱> <玩家>",sender);
+                    plugin.mg("/at kick <玩家>",sender);
+                    plugin.mg("/at score <隊伍名稱> <整數>",sender);
+                    plugin.mg("/at send <隊伍名稱> <伺服器>",sender);
+                    plugin.mg("/at show x y z",sender);
+                    plugin.mg("/at last //最後存活的隊伍的分數為lastTeam，存活隊伍數為teamNumber",sender);
                     return true;
                 }
                 if(args[0].equals("list")){
@@ -49,7 +55,7 @@ public class adminteam implements CommandExecutor {
                     return true;
                 }
                 if(args[0].equals("create")){
-                    if(args[1].isEmpty()) {
+                    if(args[1]==null) {
                         plugin.mg("請輸入隊伍名稱",sender);
                         return true;
                     }
@@ -58,7 +64,7 @@ public class adminteam implements CommandExecutor {
                 }
 
                 if(args[0].equals("delete")){
-                    if(args[1].isEmpty()) {
+                    if(args[1]==null) {
                         plugin.mg("請輸入隊伍名稱",sender);
                         return true;
                     }
@@ -66,23 +72,19 @@ public class adminteam implements CommandExecutor {
                     return true;
                 }
                 if(args[0].equals("kick")){
-                    if(args[1].isEmpty()) {
-                        plugin.mg("請輸入隊伍名稱",sender);
-                        return true;
-                    }
-                    if(args[2].isEmpty()) {
+                    if(args[1]==null) {
                         plugin.mg("請輸入玩家名稱",sender);
                         return true;
                     }
-                    deletePlayer(args[1],args[2],sender);
+                    deletePlayer(args[1],sender);
                     return true;
                 }
                 if(args[0].equals("add")){
-                    if(args[1].isEmpty()) {
+                    if(args[1]==null) {
                         plugin.mg("請輸入隊伍名稱",sender);
                         return true;
                     }
-                    if(args[2].isEmpty()) {
+                    if(args[2]==null) {
                         plugin.mg("請輸入玩家名稱",sender);
                         return true;
                     }
@@ -90,11 +92,11 @@ public class adminteam implements CommandExecutor {
                     return true;
                 }
                 if(args[0].equals("score")){
-                    if(args[1].isEmpty()) {
+                    if(args[1]==null) {
                         plugin.mg("請輸入隊伍名稱",sender);
                         return true;
                     }
-                    if(args[2].isEmpty()) {
+                    if(args[2]==null) {
                         plugin.mg("請輸入分數",sender);
                         return true;
                     }
@@ -102,11 +104,11 @@ public class adminteam implements CommandExecutor {
                     return true;
                 }
                 if(args[0].equals("send")){
-                    if(args[1].isEmpty()) {
+                    if(args[1]==null) {
                         plugin.mg("請輸入隊伍名稱",sender);
                         return true;
                     }
-                    if(args[2].isEmpty()) {
+                    if(args[2]==null) {
                         plugin.mg("請輸入伺服器",sender);
                         return true;
                     }
@@ -117,11 +119,19 @@ public class adminteam implements CommandExecutor {
                     }
                     return true;
                 }
-                if(args[0].equals("update")){
-                    join.teamCreate();
+
+                if(args[0].equals("show")){
+                    if (args[1]==null||args[2]==null||args[3]==null){
+                        plugin.mg("請輸入正確的座標",sender);
+                        return true;
+                    }
+                    showScore(Double.parseDouble(args[1]) ,Double.parseDouble(args[2]),Double.parseDouble(args[3]),sender);
+                    return true;
                 }
-
-
+                if(args[0].equals("last")){
+                    getLastTeam(sender);
+                    return true;
+                }
             }
             else {
                 sender.sendMessage(ChatColor.RED+"你沒有權限執行此命令");
@@ -204,41 +214,43 @@ public class adminteam implements CommandExecutor {
         team.updateOne(eq("name",teamname), new Document("$set",players));
         //if the player is in the server then add the player to the team
         join.updateScoreboard();
+        if(Bukkit.getPlayer(player)!=null) {
+            chat.updateDisplay(Objects.requireNonNull(Bukkit.getPlayer(player)));
+        }
         s.sendMessage(ChatColor.BLUE+ (player +"成功加入"+teamname));
     }
 
     //kick player in team
-    public void deletePlayer(String teamname,String player,CommandSender s){
+    public void deletePlayer(String player,CommandSender s){
 
         //get the team
         ScoreboardManager manager = Bukkit.getScoreboardManager();
         assert manager != null;
         Scoreboard board= manager.getMainScoreboard();
-        Team t = board.getTeam(teamname);
 
         //get the team in database
-        Document team1=team.find(eq("name",teamname)).first();
+        Document team1=team.find(in("player",player)).first();
+        if(team1==null){
+            plugin.mg("此玩家並沒有隊伍",s);
+            return;
+        }
         List<String> playerList = (List<String>) team1.get("player");
+        String teamName = team1.getString("name");
+        Team t = board.getTeam(teamName);
         assert playerList != null;
 
         //check if the player is in the team and kick it
-        for (String playerConfig:playerList) {
-            if(player.equals(playerConfig)){
-                assert t != null;
-                t.removeEntry(playerConfig);
-                s.sendMessage(ChatColor.BLUE+ ("隊伍"+teamname+"已移除"+player));
-                playerList.remove(playerConfig);
-                Document players = new Document("player",playerList);
-                team.updateOne(eq("name",teamname), new Document("$set",players));
-                //if the player is in the server then add the player to the team
-                join.updateScoreboard();
-                return;
-            }
-
+        assert t != null;
+        t.removeEntry(player);
+        s.sendMessage(ChatColor.BLUE+ ("隊伍"+teamName+"已移除"+player));
+        playerList.remove(player);
+        Document players = new Document("player",playerList);
+        team.updateOne(eq("name",teamName), new Document("$set",players));
+        //if the player is in the server then add the player to the team
+        join.updateScoreboard();
+        if(Bukkit.getPlayer(player)!=null) {
+            chat.updateDisplay(Objects.requireNonNull(Bukkit.getPlayer(player)));
         }
-
-        plugin.mg("這玩家不存在於此隊伍",s);
-
     }
 
     //delete the team
@@ -273,13 +285,20 @@ public class adminteam implements CommandExecutor {
             plugin.mg("此玩家不在隊伍裡",s);
             return;
         }
-        if (score<0){
-            plugin.mg("不得為小於0的數字",s);
-            return;
-        }
+
         String teamname=team1.getString("name");
-        Document score1 = new Document("score",score);
+        Document score1 = new Document("score",score+team1.getInteger("score"));
         team.updateOne(eq("name",teamname),new Document("$set",score1));
+        plugin.mg("已為"+teamname+"加了"+score+"分",s);
+        List<String> teamPlayer = (List<String>) team1.get("player");
+        for (String players:teamPlayer){
+            if (Bukkit.getPlayer(players)!=null){
+                Player p =Bukkit.getPlayer(players);
+
+                p.playSound(p.getLocation(),Sound.BLOCK_NOTE_BLOCK_PLING,50,10) ;
+                p.sendMessage("§d你們隊伍"+teamname+"獲得了"+score+"分");
+            }
+        }
     }
 
     //send player
@@ -306,5 +325,73 @@ public class adminteam implements CommandExecutor {
 
         }
 
+    }
+
+    //summon a armor stand that shows teams score
+    public void showScore(double x,double y,double z, CommandSender s){
+        World world =s.getServer().getWorld("world");
+
+        Double Y=y-2;
+        assert false;
+        FindIterable<Document> cursor=team.find().sort(new BasicDBObject("score",1));
+        MongoCursor<Document> teams =cursor.iterator();
+        for (MongoCursor<Document> it = teams; it.hasNext(); ) {
+            Document Score = it.next();
+            Location location1=new Location(world,x,Y,z);
+            ArmorStand a =(ArmorStand)world.spawnEntity(location1, EntityType.ARMOR_STAND);
+            a.setInvulnerable(true);
+            a.setCollidable(false);
+            a.setGravity(false);
+            a.setVisible(false);
+            a.setCustomNameVisible(true);
+            a.setCustomName("§b"+Score.getString("name")+" §f: "+Score.getInteger("score"));
+            Y+=0.3;
+        }
+        Location location = new Location(world,x,Y,z);
+        ArmorStand armorStand =(ArmorStand)world.spawnEntity(location, EntityType.ARMOR_STAND);
+        armorStand.setInvulnerable(true);
+        armorStand.setCollidable(false);
+        armorStand.setGravity(false);
+        armorStand.setVisible(false);
+        armorStand.setCustomNameVisible(true);
+        armorStand.setCustomName("§c隊伍分數\n");
+        plugin.mg("已在座標 "+x+" "+y+" "+z+" "+"生成隊伍分數板",s);
+    }
+    public void getLastTeam(CommandSender sender){
+        scoreTeam.putIfAbsent("Java",0);
+        scoreTeam.putIfAbsent("Python",1);
+        scoreTeam.putIfAbsent("PHP",2);
+        scoreTeam.putIfAbsent("JavaScript",3);
+        scoreTeam.putIfAbsent("Swift",4);
+        scoreTeam.putIfAbsent("Kotlin",5);
+        scoreTeam.putIfAbsent("Go",6);
+        scoreTeam.putIfAbsent("C",7);
+        scoreTeam.putIfAbsent("Basic",8);
+        scoreTeam.putIfAbsent("HTML",9);
+        scoreTeam.putIfAbsent("Aincrad",10);
+        scoreTeam.putIfAbsent("Perl",11);
+        scoreTeam.putIfAbsent("SQL",12);
+        scoreTeam.putIfAbsent("C++",13);
+        scoreTeam.putIfAbsent("Fortran",14);
+        scoreTeam.putIfAbsent("Ruby",15);
+        Scoreboard board = Objects.requireNonNull(Bukkit.getScoreboardManager()).getMainScoreboard();
+        Set<Team> lastTeam = new HashSet<Team>();
+        for (Player player: Bukkit.getOnlinePlayers()){
+            if(!player.getGameMode().equals(GameMode.SPECTATOR) && board.getEntryTeam(player.getName()) !=null) {
+                lastTeam.add(board.getEntryTeam(player.getName()));
+            }
+        }
+        if(board.getObjective("info")==null){
+            board.registerNewObjective("info","dummy");
+        }
+        board.getObjective("info").getScore("teamNumber").setScore(lastTeam.size());
+        if(lastTeam.size()==1) {
+            for (Team team : lastTeam) {
+                board.getObjective("info").getScore("lastTeam").setScore(scoreTeam.get(team.getName()));
+                plugin.mg("已剩下"+team.getName(),sender);
+                return;
+            }
+        }
+        plugin.mg("還剩下"+lastTeam.size()+"隊",sender);
     }
 }

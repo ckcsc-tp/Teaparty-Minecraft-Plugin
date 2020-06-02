@@ -14,15 +14,14 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.scoreboard.*;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 public class join implements Listener {
 
     TeapartyPlugin plugin;
     public static final HashMap<Player,Scoreboard> scoreboard = new HashMap<Player, Scoreboard>();
     public static final HashMap<String,Integer> onlinePlayer  = new HashMap<String, Integer>();
+
     public join(TeapartyPlugin teapartyPlugin ) {
         plugin=teapartyPlugin;
     }
@@ -30,15 +29,16 @@ public class join implements Listener {
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent e){
         Player p = e.getPlayer();
-        e.setJoinMessage(ChatColor.GREEN+p.getName()+ChatColor.YELLOW+" Welcome!");
+        e.setJoinMessage(ChatColor.GREEN+p.getName()+ChatColor.YELLOW+" 歡迎來到茶會!");
         scoreboard.put(p, Objects.requireNonNull(Bukkit.getServer().getScoreboardManager()).getNewScoreboard());
         updateScoreboard();
+        teamCreate();
         chat.updateDisplay(p);
     }
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent e){
         Player p = e.getPlayer();
-        e.setQuitMessage(ChatColor.GREEN+p.getName()+ChatColor.YELLOW+" Quit");
+        e.setQuitMessage(ChatColor.GREEN+p.getName()+ChatColor.YELLOW+" 離開了茶會");
         scoreboard.remove(p);
         if(p.getGameMode().equals(GameMode.SPECTATOR)){
             updatePeople("spectateQuit");
@@ -65,8 +65,6 @@ public class join implements Listener {
             String name =partys.getString("name");
             if(board.getTeam(name)==null){
                 Team t = board.registerNewTeam(name);
-                t.setPrefix(ChatColor.RED+("["+name+"]"));
-                t.setDisplayName(name);
                 t.setAllowFriendlyFire(false);
             }
         }
@@ -77,15 +75,14 @@ public class join implements Listener {
             for (String players :playerList){
                     team = board.getTeam(teamname);
                     assert team != null;
-                    team.addPlayer(Bukkit.getOfflinePlayer(players));
+                    team.addEntry(players);
                 }
             }
         }
     public static void updatePeople(String status){
         int Alive=0;
-        if(onlinePlayer.get("online")==null){
-            onlinePlayer.put("online",Bukkit.getOnlinePlayers().size());
-        }
+        onlinePlayer.putIfAbsent("online",1);
+        onlinePlayer.putIfAbsent("spectate", 1);
         for (Player online : Bukkit.getOnlinePlayers()){
             GameMode gameMode =online.getGameMode();
             if(gameMode.equals(GameMode.SURVIVAL)||gameMode.equals(GameMode.ADVENTURE)||gameMode.equals(GameMode.CREATIVE)) {
@@ -97,7 +94,7 @@ public class join implements Listener {
             Alive--;
         }
         if(status.equals("fromSpectator")) Alive++;
-        onlinePlayer.putIfAbsent("spectate", Alive);
+
 
         int number= (status.equals("join")||status.equals("notAlive")||status.equals("fromSpectator")) ? Bukkit.getOnlinePlayers().size() : Bukkit.getOnlinePlayers().size()-1;
 
@@ -106,8 +103,9 @@ public class join implements Listener {
             board.resetScores("§6人數 §f： "+onlinePlayer.get("spectate")+"/"+onlinePlayer.get("online"));
             board.getObjective("info")
                     .getScore("§6人數 §f： "+Alive+"/"+number)
-                    .setScore(4);
+                    .setScore(3);
         }
+        peopleMainScore(Alive);
         onlinePlayer.put("online",number);
         onlinePlayer.put("spectate",Alive);
 
@@ -133,7 +131,6 @@ public class join implements Listener {
             String thisPlayerTeam = "你還沒有隊伍";
             //register all team
             FindIterable<Document> party = TeapartyPlugin.team.find();
-            FindIterable<Document> club = TeapartyPlugin.clubs.find();
             for(Team playerTeams: board.getTeams()){
                 playerTeams.unregister();
             }
@@ -150,11 +147,20 @@ public class join implements Listener {
                     thisPlayerTeam = playerTeam.getName();
                 }
             }
-            info.getScore("§8-------------------------").setScore(5);
-            info.getScore("§a隊伍 §f： " +thisPlayerTeam).setScore(3);
-            info.getScore("§8----------§cmc.ckcsc.net§8---------").setScore(2);
+            info.getScore("§8------------------------------").setScore(4);
+            info.getScore("§a隊伍 §f： " +thisPlayerTeam).setScore(2);
+            info.getScore("§8-----------§c§lmc.ckcsc.net§r§8-------").setScore(1);
             online.setScoreboard(board);
-            join.updatePeople("join");
         }
+        join.updatePeople("join");
     }
+
+    public static void peopleMainScore(int alive){
+        Scoreboard board = Objects.requireNonNull(Bukkit.getScoreboardManager()).getMainScoreboard();
+        if(board.getObjective("info")==null){
+            board.registerNewObjective("info","dummy");
+        }
+        Objects.requireNonNull(board.getObjective("info")).getScore("alive").setScore(alive);
+    }
+
 }
