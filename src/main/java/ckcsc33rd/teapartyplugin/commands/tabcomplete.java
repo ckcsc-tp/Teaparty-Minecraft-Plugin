@@ -18,12 +18,12 @@ public class tabcomplete implements TabCompleter {
         List<String> list = new ArrayList<>();
         if(sender instanceof Player){
             if (command.getName().equalsIgnoreCase("party")){
-                if (args.length==0){
+                if (args.length==1){
                     list.add("list");
                     list.add("chat");
                     list.add("help");
                     return list;
-                }else if (args.length==1&& args[0].equals("list")){
+                }else if (args.length==2&& args[0].equals("list")){
                     for(Team teams: Objects.requireNonNull(Bukkit.getScoreboardManager()).getMainScoreboard().getTeams()){
                         list.add(teams.getName());
                     }
@@ -32,7 +32,7 @@ public class tabcomplete implements TabCompleter {
 
             }
             if (command.getName().equalsIgnoreCase("adminteam")){
-                if (args.length==0){
+                if (args.length==1){
                     list.add("create");
                     list.add("delete");
                     list.add("add");
@@ -41,15 +41,31 @@ public class tabcomplete implements TabCompleter {
                     list.add("send");
                     list.add("show");
                     list.add("last");
-                }else if (args.length==1&&
+                    list.add("win");
+                    list.add("tnt");
+                    return list;
+                }else if (args.length==2&&
                         (args[0].equals("create")
                         ||args[0].equals("delete")
                         ||args[0].equals("add")
-                        ||args[0].equals("score")
                         ||args[0].equals("send"))){
                     for(Team teams: Objects.requireNonNull(Bukkit.getScoreboardManager()).getMainScoreboard().getTeams()){
                         list.add(teams.getName());
                     }
+                    return list;
+                }else if (args.length==2&&(args[0].equals("score"))){
+                    for (Player player:Bukkit.getOnlinePlayers()){
+                        list.add(player.getName());
+                    }
+                    return list;
+                }else if (args.length==2&&(args[0].equals("show"))){
+                    list.add(String.valueOf(((Player) sender).getPlayer().getLocation().getBlockX()));
+                    return list;
+                }else if (args.length==3&&(args[0].equals("show"))){
+                    list.add(String.valueOf(((Player) sender).getPlayer().getLocation().getBlockY()));
+                    return list;
+                }else if (args.length==4&&(args[0].equals("show"))){
+                    list.add(String.valueOf(((Player) sender).getPlayer().getLocation().getBlockZ()));
                     return list;
                 }
             }

@@ -32,19 +32,18 @@ public class join implements Listener {
         e.setJoinMessage(ChatColor.GREEN+p.getName()+ChatColor.YELLOW+" 歡迎來到茶會!");
         scoreboard.put(p, Objects.requireNonNull(Bukkit.getServer().getScoreboardManager()).getNewScoreboard());
         updateScoreboard();
-        teamCreate();
         chat.updateDisplay(p);
     }
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent e){
         Player p = e.getPlayer();
-        e.setQuitMessage(ChatColor.GREEN+p.getName()+ChatColor.YELLOW+" 離開了茶會");
-        scoreboard.remove(p);
+        e.setQuitMessage(ChatColor.GREEN+p.getName()+ChatColor.YELLOW+" 離開了遊戲");
         if(p.getGameMode().equals(GameMode.SPECTATOR)){
             updatePeople("spectateQuit");
         }else {
             updatePeople("quit");
         }
+        scoreboard.remove(p);
     }
     @EventHandler
     public void onModeChange(PlayerGameModeChangeEvent e){
@@ -61,11 +60,15 @@ public class join implements Listener {
         assert manager != null;
         Scoreboard board = manager.getMainScoreboard();
         FindIterable<Document> party = TeapartyPlugin.team.find();
+        for (Team t:board.getTeams()){
+            t.unregister();
+        }
         for(Document partys:party){
             String name =partys.getString("name");
             if(board.getTeam(name)==null){
                 Team t = board.registerNewTeam(name);
-                t.setAllowFriendlyFire(false);
+                t.setDisplayName(ChatColor.GREEN+name);
+
             }
         }
         Team team;
@@ -76,6 +79,7 @@ public class join implements Listener {
                     team = board.getTeam(teamname);
                     assert team != null;
                     team.addEntry(players);
+                    team.setAllowFriendlyFire(false);
                 }
             }
         }
@@ -125,7 +129,7 @@ public class join implements Listener {
             }
 
             Objective info= board.registerNewObjective("info","dummy");
-            info.setDisplayName("§6§lResplendent §r§fX §9§lUltramarine");
+            info.setDisplayName("§6§l成景Minecraft茶會");
             info.setDisplaySlot(DisplaySlot.SIDEBAR);
 
             String thisPlayerTeam = "你還沒有隊伍";
@@ -147,9 +151,9 @@ public class join implements Listener {
                     thisPlayerTeam = playerTeam.getName();
                 }
             }
-            info.getScore("§8------------------------------").setScore(4);
+            info.getScore("§8---------------------------").setScore(4);
             info.getScore("§a隊伍 §f： " +thisPlayerTeam).setScore(2);
-            info.getScore("§8-----------§c§lmc.ckcsc.net§r§8-------").setScore(1);
+            info.getScore("§8---------§c§lmc.ckcsc.net§r§8------").setScore(1);
             online.setScoreboard(board);
         }
         join.updatePeople("join");
@@ -162,5 +166,6 @@ public class join implements Listener {
         }
         Objects.requireNonNull(board.getObjective("info")).getScore("alive").setScore(alive);
     }
+
 
 }

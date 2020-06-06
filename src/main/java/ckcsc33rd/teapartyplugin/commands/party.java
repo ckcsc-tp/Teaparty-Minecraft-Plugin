@@ -76,6 +76,7 @@ public class party implements CommandExecutor {
             if (args[0].equals("chat")) {
                 if(args[1]==null){
                     plugin.mg("請輸入訊息",sender);
+                    return true;
                 }
                 teamChat(args,sender.getName());
                 return true;

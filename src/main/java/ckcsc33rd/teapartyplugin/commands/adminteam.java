@@ -26,8 +26,8 @@ import static com.mongodb.client.model.Filters.*;
 
 public class adminteam implements CommandExecutor {
 
-    TeapartyPlugin plugin;
-    MongoCollection<Document> team;
+    public static TeapartyPlugin plugin;
+    public static MongoCollection<Document> team;
     public static final HashMap<String,Integer> scoreTeam = new HashMap<String, Integer>();
     public adminteam(TeapartyPlugin teapartyPlugin) {
         //繼承plugin跟mongodb
@@ -48,6 +48,8 @@ public class adminteam implements CommandExecutor {
                     plugin.mg("/at send <隊伍名稱> <伺服器>",sender);
                     plugin.mg("/at show x y z",sender);
                     plugin.mg("/at last //最後存活的隊伍的分數為lastTeam，存活隊伍數為teamNumber",sender);
+                    plugin.mg("/at tnt",sender);
+                    plugin.mg("/at win",sender);
                     return true;
                 }
                 if(args[0].equals("list")){
@@ -100,7 +102,7 @@ public class adminteam implements CommandExecutor {
                         plugin.mg("請輸入分數",sender);
                         return true;
                     }
-                    score(args[1],Integer.parseInt(args[2]),sender);
+                    score(args[1],Integer.parseInt(args[2]));
                     return true;
                 }
                 if(args[0].equals("send")){
@@ -130,6 +132,21 @@ public class adminteam implements CommandExecutor {
                 }
                 if(args[0].equals("last")){
                     getLastTeam(sender);
+                    return true;
+                }
+                if(args[0].equals("tnt")){
+                    if(args[1].equals("true") || args[1].equals("false")) {
+                        plugin.getConfig().set("tnt",args[1]);
+                        return true;
+                    }else plugin.mg("請輸入true或是false",sender);
+                    return true;
+                }
+                if (args[0].equals("win")){
+                    teamWin();
+                    return true;
+                }
+                if(args[0].equals("update")){
+                    join.teamCreate();
                     return true;
                 }
             }
@@ -279,17 +296,15 @@ public class adminteam implements CommandExecutor {
     }
 
     //adds team score
-    public void score(String player,int score,CommandSender s){
+    public static void score(String player,int score){
         Document team1=team.find(in("player",player)).first();
         if(team1==null){
-            plugin.mg("此玩家不在隊伍裡",s);
             return;
         }
 
         String teamname=team1.getString("name");
         Document score1 = new Document("score",score+team1.getInteger("score"));
         team.updateOne(eq("name",teamname),new Document("$set",score1));
-        plugin.mg("已為"+teamname+"加了"+score+"分",s);
         List<String> teamPlayer = (List<String>) team1.get("player");
         for (String players:teamPlayer){
             if (Bukkit.getPlayer(players)!=null){
@@ -331,7 +346,7 @@ public class adminteam implements CommandExecutor {
     public void showScore(double x,double y,double z, CommandSender s){
         World world =s.getServer().getWorld("world");
 
-        Double Y=y-2;
+        Double Y=y;
         assert false;
         FindIterable<Document> cursor=team.find().sort(new BasicDBObject("score",1));
         MongoCursor<Document> teams =cursor.iterator();
@@ -344,6 +359,7 @@ public class adminteam implements CommandExecutor {
             a.setGravity(false);
             a.setVisible(false);
             a.setCustomNameVisible(true);
+            a.setMarker(true);
             a.setCustomName("§b"+Score.getString("name")+" §f: "+Score.getInteger("score"));
             Y+=0.3;
         }
@@ -355,6 +371,7 @@ public class adminteam implements CommandExecutor {
         armorStand.setVisible(false);
         armorStand.setCustomNameVisible(true);
         armorStand.setCustomName("§c隊伍分數\n");
+        armorStand.setMarker(true);
         plugin.mg("已在座標 "+x+" "+y+" "+z+" "+"生成隊伍分數板",s);
     }
     public void getLastTeam(CommandSender sender){
@@ -393,5 +410,26 @@ public class adminteam implements CommandExecutor {
             }
         }
         plugin.mg("還剩下"+lastTeam.size()+"隊",sender);
+    }
+    public void teamWin(){
+        for(Player player: Bukkit.getOnlinePlayers()){
+            if (!player.getGameMode().equals(GameMode.SPECTATOR)){
+                score(player.getName(),50);
+                Bukkit.broadcastMessage("§a§l恭喜"+ Objects.requireNonNull(Objects.requireNonNull(Bukkit
+                        .getScoreboardManager())
+                        .getMainScoreboard()
+                        .getEntryTeam(player.getName())).getName()+"贏得了本場遊戲的勝利!");
+                return;
+            }
+        }
+    }
+
+
+    public static void tntScore(){
+       for (Player player:Bukkit.getOnlinePlayers()){
+           if (!player.getGameMode().equals(GameMode.SPECTATOR)){
+               score(player.getName(),3);
+           }
+       }
     }
 }

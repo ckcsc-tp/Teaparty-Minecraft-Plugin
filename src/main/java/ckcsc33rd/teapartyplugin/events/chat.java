@@ -38,5 +38,7 @@ public class chat implements Listener {
         }
         Objects.requireNonNull(p.getPlayer()).setDisplayName(chatTeam+ ChatColor.GREEN+thisClub+ChatColor.WHITE +p.getName());
         p.getPlayer().setPlayerListName(chatTeam+ChatColor.GREEN+thisClub+ChatColor.WHITE +p.getName());
+        p.getPlayer().setPlayerListHeader("§6§lResplendent §r§fX §9§lUltramarine");
+
     }
 }
